@@ -1,0 +1,86 @@
+
+#Title: Reproducible Research: Peer Assessment 1
+##Author: Firdhoush K
+##Date: Wednesday, April 15, 2015
+##Output: PA1_template.html
+
+##1. Read "Activity Monitoring data" from current working directory and store to a data frame. Transform the date column from 'character' to 'date' type. Load required packages for graphics & statistical operations.
+
+```{r load_data,echo=TRUE}
+
+ data <- read.csv("repdata_data_activity\\activity.csv",stringsAsFactors = FALSE)
+ data$date <- as.Date(data$date,"%Y-%m-%d") ##Coercing to date type.
+ require(stats)
+ require(ggplot2)
+ 
+```
+
+##2. Total number of steps taken per day. Histogram of the total number of steps taken each day.Report the mean and median of the total number of steps taken per day.
+
+```{r total_per_day,echo=TRUE}
+
+ data <- na.omit(data) ## Removing NA's from the data
+ rowsum(data$steps,data$date) ## Total number of steps taken per day
+ ## Histogram of the total number of steps taken each day
+ hist(rowsum(data$steps,data$date),col="red",xlab="Total number of steps taken per day",main="Histogram")
+ s<- summary(rowsum(data$steps,data$date)) ## Computing mean and median of the total number of steps taken per day.
+ 
+```
+###The `r s[3]` and `r s[4]` for total number of steps taken per day.  The `r s[2]` and `r s[5]` for total number of steps taken per day.
+
+##3. Average daily activity pattern across 5-minute interval.
+```{r average_daily_activity_pattern,echo=TRUE}
+  
+  x<-aggregate(data[,1],list(interval=data$interval),mean) ## Computing Average daily activity pattern across  
+                                                           ##  5-minute interval
+  ## Plot of the total number of steps taken each day across 5-minute inerval.
+  plot(x,type="l",ylab="Frequency(# of steps taken)",main="Average daily activity pattern across 5-minute interval")
+    
+```
+
+### 5-minute interval number `r x[order(-x[,2]),][1,1]`,contains the maximum number of steps on average across all the days in the dataset.
+
+##4. Inputting missing values.
+```{r missing_values,echo=TRUE}
+  
+ data <- read.csv("repdata_data_activity\\activity.csv",stringsAsFactors = FALSE)
+ data$date <- as.Date(data$date,"%Y-%m-%d")
+ m<-sum(is.na(data[,1])) ##Finding number of missing values.
+ 
+ ## Filling missing data with mean from the same interval, where means are stored in variable x(Taken from Section 3)
+ for (i in  1:17568) {
+       if (is.na(data[i,1]) == "TRUE" ) {
+        for (j in  1:288){
+          if (data[i,3] == x[j,1] ){
+          y<- x[j,2]
+          }
+        } 
+        data[i,1] <- y
+    }
+   }
+
+ 
+ s<-summary(rowsum(data$steps,data$date)) ## Computing mean and median of the total number of steps taken per day.
+ ## Histogram of the total number of steps taken each day after filling NA's with mean.
+ hist(rowsum(data$steps,data$date),col="red",xlab="Total number of steps taken per day",main="Histogram") 
+
+ 
+```
+
+###The total number of missing values in this dataset is `r m`
+
+###The `r s[3]` and `r s[4]` for total number of steps taken per day. This values doesn't change even after filling the NA's. The `r s[2]` and `r s[5]` for total number of steps taken per day.The quartiles have changed as the input values had an impact on those range of data as NA's are more occuring there.
+
+##5. Patterns between weekdays and weekends.Creation of new factor column "wd" indicating weekend or weekday.
+
+```{r weekday_weekends,echo=TRUE}
+  ## Creating new factor column "wd" indicating weekend or weekday.
+  data$wd <- "weekday" 
+  data$wd[weekdays(data$date) == "Saturday" | weekdays(data$date) == "Sunday" ] <- "weekend"
+  z<-aggregate(data[,1],list(interval=data$interval,week=data$wd),mean)## Computing Average daily activity pattern 
+                                                                       ## cross  5-minute interval 
+          
+  ggplot(z,aes(interval,x)) + geom_line() + facet_grid(.~week) + ylab("Number of steps")
+    
+  
+```
